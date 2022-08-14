@@ -1,0 +1,19 @@
+:root {
+	--background: rgb(31, 31, 31);
+	--font-color: #fff;
+	--button-background: rgb(50, 50, 50);
+	--button-size: 22vw;
+}
+
+* {
+	color: var(--font-color);
+}
+
+#app {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background: var(--background);
+}
