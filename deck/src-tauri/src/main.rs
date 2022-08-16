@@ -18,7 +18,17 @@ fn main() {
       
       app.listen_global("button_press", move |event| {
         let mut stream = TcpStream::connect(SERVER).unwrap();
-        stream.write(event.payload().unwrap().as_bytes()).unwrap();
+        let success:bool = match stream.write(event.payload().unwrap().as_bytes()) {
+          Ok(_res) => true,
+          Err(_err) => false
+        };
+
+        if success {
+          println!("Sent the button press to the receiver");
+        } else {
+          println!("Error while sending the button press to the receiver");
+        }
+
         stream.flush().unwrap();
         stream.shutdown(std::net::Shutdown::Both).unwrap();
         println!("Button press id: {}", event.payload().unwrap());
