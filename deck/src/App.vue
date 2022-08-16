@@ -8,8 +8,7 @@ import { emit } from "@tauri-apps/api/event";
 export default {
 	methods: {
 		async press(button) {
-			console.log(button.srcElement.getAttribute("bid"));
-			await emit("button-press", button.srcElement.getAttribute("bid"));
+			await emit("button_press", button.srcElement.getAttribute("bid"));
 		},
 	},
 };
@@ -23,8 +22,8 @@ export default {
 		<DeckButton bid="4" @click="press" />
 		<DeckButton bid="5" @click="press" />
 		<DeckButton bid="6" @click="press" />
+		<DeckButton bid="7" @click="press" />
 		<DeckButton bid="8" @click="press" />
-		<DeckButton bid="9" @click="press" />
 	</div>
 </template>
 
