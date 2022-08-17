@@ -15,7 +15,22 @@ const SERVER: &str = "localhost:3030";
 fn main() {
   tauri::Builder::default()
     .setup(|app| {
-      
+
+      let app_handle = app.app_handle();
+
+      app.listen_global("settings", move |event| {
+        match event.payload().unwrap() {
+          // Toggle fullscreen
+          "1" => {
+            println!("Toggle fullscreen");
+            app_handle.windows().iter().for_each(|obj| {
+              obj.1.set_fullscreen(!obj.1.is_fullscreen().unwrap()).unwrap();
+            });
+          },
+          &_ => println!("Receibed unknown setting id: {}", event.payload().unwrap())
+        };
+      });
+
       app.listen_global("button_press", move |event| {
         let mut stream = TcpStream::connect(SERVER).unwrap();
         let success:bool = match stream.write(event.payload().unwrap().as_bytes()) {

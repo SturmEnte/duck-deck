@@ -5,6 +5,12 @@ import DeckButton from "./components/DeckButton.vue";
 <script>
 import { emit } from "@tauri-apps/api/event";
 
+window.onkeydown = (event) => {
+	if (event.key == "F11") {
+		emit("settings", "1");
+	}
+};
+
 export default {
 	methods: {
 		async press(button) {
