@@ -8,11 +8,20 @@
 
 use std::net::TcpStream;
 use std::io::Write;
-use tauri::Manager;
+use tauri::{Manager, AppHandle, CustomMenuItem, Menu, Submenu};
 
 const SERVER: &str = "localhost:3030";
 
 fn main() {
+
+  let quit = CustomMenuItem::new("quit".to_string(), "Quit");
+  let fullscreen = CustomMenuItem::new("fullscreen".to_string(), "Fullscreen");
+  let settings_submenu = Submenu::new("Settings", Menu::new().add_item(fullscreen));
+
+  let menu = Menu::new()
+    .add_item(quit)
+    .add_submenu(settings_submenu);
+
   tauri::Builder::default()
     .setup(|app| {
 
@@ -20,12 +29,8 @@ fn main() {
 
       app.listen_global("settings", move |event| {
         match event.payload().unwrap() {
-          // Toggle fullscreen
           "1" => {
-            println!("Toggle fullscreen");
-            app_handle.windows().iter().for_each(|obj| {
-              obj.1.set_fullscreen(!obj.1.is_fullscreen().unwrap()).unwrap();
-            });
+            toggle_fullscreen(&app_handle);
           },
           &_ => println!("Receibed unknown setting id: {}", event.payload().unwrap())
         };
@@ -51,6 +56,27 @@ fn main() {
 
       Ok(())
     })
+    .menu(menu)
+    .on_menu_event(|event| {
+      match event.menu_item_id() {
+        "quit" => {
+          std::process::exit(0);
+        }
+        "fullscreen" => {
+          toggle_fullscreen(&event.window().app_handle());
+        }
+        _ => {}
+      }
+    })
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
+}
+
+fn toggle_fullscreen(app_handle: &AppHandle) {
+  println!("Toggle fullscreen");
+  app_handle.windows().iter().for_each(|obj| {
+    obj.1.menu_handle().toggle().unwrap();
+    obj.1.set_fullscreen(!obj.1.is_fullscreen().unwrap()).unwrap();
+  });
+  //TODO save fullscreen state and load it on startup
 }
