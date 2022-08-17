@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Own
+src-tauri/config
+src-tauri/src/main.fast.rs
