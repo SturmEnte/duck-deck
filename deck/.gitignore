@@ -23,6 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
+# Cargo
+src-tauri/target/
+
 # Own
 src-tauri/config
 src-tauri/src/main.fast.rs
+src-tauri/src/config.old.rs
