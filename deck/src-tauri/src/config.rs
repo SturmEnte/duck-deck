@@ -44,8 +44,6 @@ impl Config {
                     i += 1;
                 }
 
-                println!("Key: {}", key);
-
                 match key {
                     "fullscreen" => {
                         if value == "true" {
@@ -59,7 +57,7 @@ impl Config {
                     "receiver_url" => {
                         config.receiver_url = value;
                     },
-                    &_ => println!("Unknown key: {}", key) 
+                    &_ => println!("Unknown config key: {}", key) 
                 };
             }
         }
@@ -80,12 +78,6 @@ impl Config {
             let mut f = std::fs::OpenOptions::new().write(true).truncate(true).open(self.file_path.as_str()).unwrap();
             f.write_all(file_string.as_bytes()).unwrap();
             f.flush().unwrap();
-
-            // let mut file = File::open(self.file_path.as_str()).unwrap();
-            // match file.write_all(file_string.as_bytes()) {
-            //     Ok(_res) => {}
-            //     Err(error) => {println!("Error while saving config: {}", error)}
-            // }
         } else {
             let mut file = File::create(self.file_path.as_str()).unwrap();
             file.write_all(file_string.as_bytes()).unwrap();
