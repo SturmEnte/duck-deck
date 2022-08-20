@@ -1,16 +1,28 @@
 // Note:
 // This version of the main file might be slow. I am working on a faster version, but have not found a working way yet.
-
 #![cfg_attr(
   all(not(debug_assertions), target_os = "windows"),
   windows_subsystem = "windows"
 )]
 
+mod config;
+
 use std::net::TcpStream;
+use std::sync::Mutex;
 use std::io::Write;
 use tauri::{Manager, AppHandle, CustomMenuItem, Menu, Submenu};
+use once_cell::sync::Lazy;
+
+use config::Config;
 
 const SERVER: &str = "localhost:3030";
+const CONFIG_PATH: &str = "config";
+const MAIN_WINDOW_LABEL: &str = "main"; // I'm not sure if this is always the case, but at this point I don't have enough mental capacity left to find this out
+
+static CONFIG: Lazy<Mutex<Config>> = Lazy::new(|| {
+  let config = Config::new(CONFIG_PATH);
+  Mutex::new(config)
+});
 
 fn main() {
 
@@ -24,8 +36,13 @@ fn main() {
 
   tauri::Builder::default()
     .setup(|app| {
-
       let app_handle = app.app_handle();
+
+      if CONFIG.lock().unwrap().fullscreen {
+        let window = app.get_window(MAIN_WINDOW_LABEL).unwrap();
+        window.set_fullscreen(true).unwrap();
+        window.menu_handle().hide().unwrap();
+      }
 
       app.listen_global("settings", move |event| {
         match event.payload().unwrap() {
@@ -77,6 +94,7 @@ fn toggle_fullscreen(app_handle: &AppHandle) {
   app_handle.windows().iter().for_each(|obj| {
     obj.1.menu_handle().toggle().unwrap();
     obj.1.set_fullscreen(!obj.1.is_fullscreen().unwrap()).unwrap();
+    CONFIG.lock().unwrap().fullscreen = obj.1.is_fullscreen().unwrap();
+    CONFIG.lock().unwrap().save();
   });
-  //TODO save fullscreen state and load it on startup
 }
