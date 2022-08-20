@@ -38,11 +38,12 @@ fn main() {
     .setup(|app| {
       let app_handle = app.app_handle();
 
+      let window = app.get_window(MAIN_WINDOW_LABEL).unwrap();
       if CONFIG.lock().unwrap().fullscreen {
-        let window = app.get_window(MAIN_WINDOW_LABEL).unwrap();
         window.set_fullscreen(true).unwrap();
         window.menu_handle().hide().unwrap();
       }
+      window.set_focus().unwrap();
 
       app.listen_global("settings", move |event| {
         match event.payload().unwrap() {
