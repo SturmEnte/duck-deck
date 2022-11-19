@@ -1,0 +1,3 @@
+[submodule "enigo"]
+    path = "receiver/enigo"
+    url = https://github.com/NaokiM03/enigo
