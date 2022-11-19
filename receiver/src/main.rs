@@ -6,6 +6,7 @@ use enigo::{Enigo, Key, KeyboardControllable};
 use serde_json::Value as JsonValue;
 use std::fs::File;
 use std::path::Path;
+use std::io::Write;
 
 const CONFIG_PATH: &str = "config.json";
 
@@ -28,12 +29,12 @@ fn main() {
 
         match action_type {
             "key-press" => {
-                let key = obj["action"]["key"].as_str().unwrap().to_string();
+                let key = obj["action"]["key"].as_str().unwrap().to_string().chars().next().unwrap();
                 let alt = obj["action"]["alt"].as_bool().unwrap();
                 let ctrl = obj["action"]["ctrl"].as_bool().unwrap();
                 let shift = obj["action"]["shift"].as_bool().unwrap();
 
-                actions.insert(id, {Action { key: key, alt: alt, ctrl: ctrl, shift: shift }});
+                actions.insert(id, Action { key: key, alt: alt, ctrl: ctrl, shift: shift });
             },
             _ => {
                 panic!("Unknown action type");
@@ -47,12 +48,47 @@ fn main() {
         
         let mut buffer = [0; 34];
         let size = stream.read(&mut buffer).unwrap();
-        let id = String::from_utf8_lossy(&buffer[..size]);
+        let id = String::from_utf8_lossy(&buffer[..size]).to_string();
         println!("Id: {}", id);
 
-        if id == "1" {
-            enigo.key_click(Key::Layout('^'));
+        let action = match actions.get(&id) {
+            Some(a) => {
+                a
+            },
+            _ => {
+                println!("No action found for that id");
+                let _ = stream.write("1".as_bytes());
+                continue;
+            }
+        };
+
+        if action.alt {
+            enigo.key_down(Key::Alt);
         }
+
+        if action.ctrl {
+            enigo.key_down(Key::Control);
+        }
+
+        if action.shift {
+            enigo.key_down(Key::Shift);
+        }
+
+        enigo.key_click(Key::Layout(action.key));
+
+        if action.alt {
+            enigo.key_up(Key::Alt);
+        }
+
+        if action.ctrl {
+            enigo.key_up(Key::Control);
+        }
+
+        if action.shift {
+            enigo.key_up(Key::Shift);
+        }
+
+        let _ = stream.write("0".as_bytes());
     }
 }
 
@@ -79,7 +115,7 @@ fn load_config() -> Result<JsonValue, String> {
 }
 
 struct Action {
-    key: String,
+    key: char,
     alt: bool,
     ctrl: bool,
     shift: bool
