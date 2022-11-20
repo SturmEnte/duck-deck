@@ -9,7 +9,8 @@ mod config;
 
 use std::net::TcpStream;
 use std::sync::Mutex;
-use std::io::Write;
+use std::io::{Read, Write};
+use std::str;
 use tauri::{Manager, AppHandle, CustomMenuItem, Menu, Submenu};
 use once_cell::sync::Lazy;
 
@@ -55,6 +56,8 @@ fn main() {
       });
 
       app.listen_global("button_press", move |event| {
+        println!("Button press id: {}", event.payload().unwrap());
+
         let mut stream = TcpStream::connect(SERVER).unwrap();
         let success:bool = match stream.write(event.payload().unwrap().as_bytes()) {
           Ok(_res) => true,
@@ -67,9 +70,29 @@ fn main() {
           println!("Error while sending the button press to the receiver");
         }
 
+        let mut buffer = [0; 1];
+        let response: String;
+        match stream.read(&mut buffer) {
+          Ok(_) => {
+            response = String::from_utf8_lossy(&buffer).to_string();
+          },
+          Err(err) => {
+            println!("Error while receiving response. Error: \n{err}");
+            return;
+          }
+        }
+
+        match response.as_str() {
+          "0" => {
+            println!("Successfully executed");
+          },
+          _ => {
+            println!("Unknown response from receiver: {response}");
+          }
+        }
+
         stream.flush().unwrap();
         stream.shutdown(std::net::Shutdown::Both).unwrap();
-        println!("Button press id: {}", event.payload().unwrap());
       });
 
       Ok(())
