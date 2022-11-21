@@ -6,15 +6,21 @@
 )]
 
 mod config;
+mod logger;
 
 use std::net::TcpStream;
 use std::sync::Mutex;
 use std::io::{Read, Write};
 use std::str;
+use std::time::{SystemTime, UNIX_EPOCH};
+use std::path::Path;
+use std::fs::create_dir_all;
+
 use tauri::{Manager, AppHandle, CustomMenuItem, Menu, Submenu};
 use once_cell::sync::Lazy;
 
 use config::Config;
+use logger::Logger;
 
 const SERVER: &str = "localhost:3030";
 const CONFIG_PATH: &str = "config";
@@ -23,6 +29,19 @@ const MAIN_WINDOW_LABEL: &str = "main"; // I'm not sure if this is always the ca
 static CONFIG: Lazy<Mutex<Config>> = Lazy::new(|| {
   let config = Config::new(CONFIG_PATH);
   Mutex::new(config)
+});
+
+static LOGGER: Lazy<Mutex<Logger>> = Lazy::new(|| {
+
+  {
+    let path = Path::new("logs");
+    if !path.exists() {
+      create_dir_all("logs").unwrap();
+    }
+  }
+
+  let logger = Logger::new(format!("logs/{}.log", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()).as_str());
+  Mutex::new(logger)
 });
 
 fn main() {
@@ -51,12 +70,12 @@ fn main() {
           "1" => {
             toggle_fullscreen(&app_handle);
           },
-          &_ => println!("Receibed unknown setting id: {}", event.payload().unwrap())
+          &_ => LOGGER.lock().unwrap().log(format!("Receibed unknown setting id: {}", event.payload().unwrap()).as_str())
         };
       });
 
       app.listen_global("button_press", move |event| {
-        println!("Button press id: {}", event.payload().unwrap());
+        LOGGER.lock().unwrap().log(format!("Button press id: {}", event.payload().unwrap()).as_str());
 
         let mut stream = TcpStream::connect(SERVER).unwrap();
         let success:bool = match stream.write(event.payload().unwrap().as_bytes()) {
@@ -65,9 +84,9 @@ fn main() {
         };
 
         if success {
-          println!("Sent the button press to the receiver");
+          LOGGER.lock().unwrap().log("Sent the button press to the receiver");
         } else {
-          println!("Error while sending the button press to the receiver");
+          LOGGER.lock().unwrap().log("Error while sending the button press to the receiver");
         }
 
         let mut buffer = [0; 1];
@@ -77,17 +96,17 @@ fn main() {
             response = String::from_utf8_lossy(&buffer).to_string();
           },
           Err(err) => {
-            println!("Error while receiving response. Error: \n{err}");
+            LOGGER.lock().unwrap().log(format!("Error while receiving response. Error: \n{err}").as_str());
             return;
           }
         }
 
         match response.as_str() {
           "0" => {
-            println!("Successfully executed");
+            LOGGER.lock().unwrap().log("Successfully executed");
           },
           _ => {
-            println!("Unknown response from receiver: {response}");
+            LOGGER.lock().unwrap().log(format!("Unknown response from receiver: {response}").as_str());
           }
         }
 
@@ -114,7 +133,7 @@ fn main() {
 }
 
 fn toggle_fullscreen(app_handle: &AppHandle) {
-  println!("Toggle fullscreen");
+  LOGGER.lock().unwrap().log("Toggle fullscreen");
   app_handle.windows().iter().for_each(|obj| {
     obj.1.menu_handle().toggle().unwrap();
     obj.1.set_fullscreen(!obj.1.is_fullscreen().unwrap()).unwrap();
